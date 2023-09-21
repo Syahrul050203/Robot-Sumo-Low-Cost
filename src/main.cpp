@@ -57,7 +57,7 @@ void attackEnemie() {
       moveForward(255);
   }
   else if (!jarak && nilai_infrared == 0) {
-    moveLeft(0, 255);
+    moveRight(255, 0);
   }
   else {
     motorStop();
@@ -74,19 +74,15 @@ void setup() {
 
   DDRB &= ~(1<<0);
   DDRD = 0xFC;
+
+  delay(3000);
 }
 
 void loop() {
   jarak = ultrasonic.ping_cm();
   nilai_infrared = digitalRead(8);
-  
-  for (uint16_t time = 0; time < 3000; time++) {
-    motorStop();
-  }
 
-  while(1) {
-    attackEnemie();
-  }  
+  attackEnemie();  
 }
 
 
