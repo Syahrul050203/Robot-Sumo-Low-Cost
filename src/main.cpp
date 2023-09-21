@@ -1,48 +1,73 @@
 #include <Arduino.h>
 #include <NewPing.h>
 
-// #define EN_B  5
-// #define IN_4  2
-// #define IN_3  3
-// #define IN_2  4
-// #define IN_1  7
-// #define EN_A  6
+#define EN_B  5
+#define EN_A  6
 
 const int16_t trigger_pin = 9;
 const int16_t echo_pin = 10;
+const int16_t max_distance = 30;
 
-const int max_distance = 200;
+uint8_t jarak;
+uint8_t nilai_infrared;
 
 NewPing ultrasonic(trigger_pin, echo_pin, max_distance);
 
-void moveForward(int16_t pwm) {
+void moveForward(uint8_t pwm) {
   PORTD |= (1<<7) | (1<<3);
-  analogWrite(PORTD6, pwm);
-  analogWrite(PORTD5, pwm);
+  analogWrite(EN_A, pwm);
+  analogWrite(EN_B, pwm);
 }
-void backOff(int16_t pwm) {
+
+void backOff(uint8_t pwm) {
   PORTD |= (1<<4) | (1<<2);
-  analogWrite(PORTD6, pwm);
-  analogWrite(PORTD5, pwm);
+  analogWrite(EN_A, pwm);
+  analogWrite(EN_B, pwm);
 }
 
 void motorStop() {
   PORTD = 0x00;
 }
 
-void moveRight(int16_t pwm_left, int16_t pwm_right) {
+void moveRight(uint8_t pwm_left, uint8_t pwm_right) {
   PORTD |= (1<<7) | (1<<3);
-  analogWrite(PORTD6, pwm_right);
-  analogWrite(PORTD5, pwm_left);
+  analogWrite(EN_A, pwm_right);
+  analogWrite(EN_B, pwm_left);
 }
 
-void moveLeft(int16_t pwm_left, int16_t pwm_right) {
+void moveLeft(uint8_t pwm_left, uint8_t pwm_right) {
   PORTD |= (1<<7) | (1<<3);
-  analogWrite(PORTD5, pwm_left);
-  analogWrite(PORTD6, pwm_right);
+  analogWrite(EN_B, pwm_left);
+  analogWrite(EN_A, pwm_right);
 }
 
+void checkDistace() {
+  Serial.print("Jarak: ");
+  Serial.print(jarak);
+  Serial.println(" cm");
+}
 
+void checkLineSensor() {
+  Serial.print("Nilai garis: ");
+  Serial.println(nilai_infrared);
+}
+
+void attackEnemie() {
+  if (jarak > 0 && jarak <= 15 && nilai_infrared == 0) {
+      moveForward(255);
+  }
+  else if (!jarak && nilai_infrared == 0) {
+    moveLeft(0, 255);
+  }
+  else {
+    motorStop();
+    while (nilai_infrared) {
+      backOff(255);
+      delay(1000);
+      return ;
+    }
+  }
+}
 
 void setup() {
   Serial.begin(57600);
@@ -52,21 +77,16 @@ void setup() {
 }
 
 void loop() {
-  uint16_t jarak = ultrasonic.ping_cm();
-  uint8_t nilai_infrared = digitalRead(PORTD0);
+  jarak = ultrasonic.ping_cm();
+  nilai_infrared = digitalRead(8);
   
-  //coba sensor
-  Serial.print("Jarak: ");
-  Serial.print(jarak);
-  Serial.println(" cm");
-  if (nilai_infrared) 
-    Serial.println("Posisi : Dalam Arena");
-  else 
-    Serial.println("Posisi : Garis Tepi Arena");
+  for (uint16_t time = 0; time < 3000; time++) {
+    motorStop();
+  }
 
-
-
-  delay(500);
+  while(1) {
+    attackEnemie();
+  }  
 }
 
 
